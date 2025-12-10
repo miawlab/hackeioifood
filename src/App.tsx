@@ -1,5 +1,35 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, Shield, Clock, TrendingUp, Zap, Star } from 'lucide-react';
+
+/**
+ * App principal com Meta Pixel tracking adicionado:
+ * - PageView (on mount)
+ * - ViewContent (on mount)
+ * - AddToCart (ao clicar no CTA "SIM, QUERO O E-BOOK")
+ * - InitiateCheckout (ao clicar em um dos CTAs que levam ao checkout)
+ *
+ * NÃO altera layout. Substitua o arquivo atual por este.
+ */
+
+// util: gera event id simples
+function genEventId(): string {
+  if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
+    return (crypto as any).randomUUID();
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+// util: wrapper seguro para chamar fbq
+function trackEvent(eventName: string, data?: Record<string, any>) {
+  try {
+    if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+      // algumas impls aceitam eventID como quarto argumento, porém aqui passamos somente payload
+      (window as any).fbq('track', eventName, data || {});
+    }
+  } catch (e) {
+    // noop
+  }
+}
 
 function App() {
   const [timeLeft, setTimeLeft] = useState({
@@ -8,6 +38,7 @@ function App() {
     seconds: 0
   });
 
+  // contador
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -25,8 +56,61 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCTA = () => {
-    window.location.href = 'https://pay.kirvano.com/e663d532-4487-4d6f-a856-138bb3dcbf7c';
+  // PageView e ViewContent no mount (útil para SPA e para garantir view de conteúdo)
+  useEffect(() => {
+    // PageView
+    trackEvent('PageView');
+
+    // ViewContent com dados mínimos (pode ser expandido conforme produto)
+    trackEvent('ViewContent', {
+      content_name: 'Ebook Hackear o iFood',
+      content_category: 'Ebook',
+      content_ids: ['ebook-hackeieoifood-001'],
+      content_type: 'product'
+    });
+  }, []);
+
+  // URL de checkout Kirvano (já presente no seu código)
+  const checkoutUrl = 'https://pay.kirvano.com/e663d532-4487-4d6f-a856-138bb3dcbf7c';
+
+  // Handler para o CTA principal (AddToCart -> InitiateCheckout -> redirect)
+  const handlePrimaryCTA = () => {
+    const eventId = genEventId();
+    // 1) AddToCart com dados do produto
+    trackEvent('AddToCart', {
+      content_name: 'Ebook Hackear o iFood',
+      content_ids: ['ebook-hackeieoifood-001'],
+      content_type: 'product',
+      value: 29.9,
+      currency: 'BRL',
+      event_id: eventId
+    });
+
+    // 2) opcional: também já iniciar checkout (algumas flows disparam ambos)
+    trackEvent('InitiateCheckout', {
+      value: 29.9,
+      currency: 'BRL',
+      event_id: eventId
+    });
+
+    // 3) pequena delay para o pixel ter tempo de enviar
+    setTimeout(() => {
+      window.location.href = checkoutUrl;
+    }, 200);
+  };
+
+  // Handler para o CTA final (garantir acesso) — apenas InitiateCheckout
+  const handleFinalCTA = () => {
+    const eventId = genEventId();
+    trackEvent('InitiateCheckout', {
+      value: 29.9,
+      currency: 'BRL',
+      event_id: eventId
+    });
+
+    setTimeout(() => {
+      window.location.href = checkoutUrl;
+    }, 200);
   };
 
   return (
@@ -161,7 +245,7 @@ function App() {
 
           <div className="mt-12 text-center">
             <button
-              onClick={handleCTA}
+              onClick={handlePrimaryCTA}
               className="bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-xl px-12 py-6 rounded-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 shadow-lg"
             >
               SIM, QUERO O E-BOOK POR APENAS R$ 29,90!
@@ -210,7 +294,7 @@ function App() {
           </div>
 
           <button
-            onClick={handleCTA}
+            onClick={handleFinalCTA}
             className="bg-white text-orange-600 font-bold text-xl px-12 py-6 rounded-xl hover:bg-slate-100 transition-all duration-300 transform hover:scale-105 shadow-2xl w-full md:w-auto"
           >
             GARANTIR MEU ACESSO POR R$ 29,90
