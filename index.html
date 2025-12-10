@@ -1,11 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iFood Profit Mini-LP</title>
     <meta name="description" content="Descubra o método que dobra seu lucro em 7 dias usando Estratégia e Inteligência Artificial. Domine o algoritmo do iFood e construa sua lista VIP.">
+
+    <!-- Google / Social metas (mantive as suas) -->
     <meta property="og:title" content="Hackear o iFood - Dobre seu Lucro em 7 Dias">
     <meta property="og:description" content="Descubra o método que dobra seu lucro em 7 dias usando Estratégia e Inteligência Artificial.">
     <meta property="og:image" content="https://bolt.new/static/og_default.png">
@@ -13,8 +15,71 @@
     <meta name="twitter:title" content="Hackear o iFood - Dobre seu Lucro em 7 Dias">
     <meta name="twitter:description" content="Descubra o método que dobra seu lucro em 7 dias usando Estratégia e Inteligência Artificial.">
     <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
-</head>
+
+    <!-- ===== Meta Pixel (script) ===== -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+
+      // Inicialize seu Pixel (ID que você informou)
+      fbq('init', '2070592897025706');
+      fbq('track', 'PageView');
+
+      // Função global para disparar InitiateCheckout + dar tempo antes do redirect
+      window.trackInitiateCheckout = function (checkoutUrl, value) {
+        try {
+          if (typeof fbq === 'function') {
+            fbq('track', 'InitiateCheckout', { value: value || 0, currency: 'BRL' });
+          }
+        } catch (err) {
+          // ignore
+        }
+
+        // opcional: enviar pequeno beacon local (não substitui um CAPI)
+        try {
+          if (navigator && navigator.sendBeacon) {
+            const payload = JSON.stringify({
+              event: 'InitiateCheckout',
+              value: value || 0,
+              url: window.location.href,
+              ts: Date.now()
+            });
+            // envia para uma rota local (_pixel_keepalive) se existir (opcional)
+            navigator.sendBeacon('/_pixel_keepalive', payload);
+          }
+        } catch(e){}
+
+        // dar uma pequena janela para o pixel ser enviado antes do redirect
+        setTimeout(function () {
+          if (checkoutUrl) window.location.href = checkoutUrl;
+        }, 250);
+      };
+
+      // Conveniência: wrapper para track custom event (opcional)
+      window.trackEvent = function(eventName, params){
+        try {
+          if (typeof fbq === 'function') fbq('track', eventName, params || {});
+        } catch(e){}
+      };
+    </script>
+    <!-- ===== End Meta Pixel script ===== -->
+
+    <!-- NOTE: o <noscript> do Pixel deve ficar no body para evitar erro do Vite/parse5 -->
+  </head>
+
   <body>
+    <!-- Meta Pixel noscript (mantido no body para compatibilidade com Vite) -->
+    <noscript>
+      <img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=2070592897025706&ev=PageView&noscript=1"/>
+    </noscript>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
